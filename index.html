@@ -1,0 +1,1116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sigplot: exam-ready plots for signals and systems</title>
+<style>
+:root{
+  --bg:#EDF0F2; --panel:#FFFFFF; --ink:#16222E; --muted:#566676; --line:#D3DADF; --field:#F7F9FA;
+  --accent:#0E6B5B; --accent-ink:#FFFFFF; --accent-soft:#DCEFEA; --danger:#B3261E; --danger-soft:#FBE9E7;
+  --ui:"Avenir Next","Segoe UI","Helvetica Neue",system-ui,sans-serif;
+  --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  --serif:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#10181E; --panel:#18232B; --ink:#E5EBEF; --muted:#93A3B0; --line:#2A3945; --field:#111B22;
+    --accent:#4CC2A6; --accent-ink:#06231D; --accent-soft:#17342E; --danger:#FF8A80; --danger-soft:#3A1F1D;
+  }
+}
+*{box-sizing:border-box}
+html{color-scheme:light dark}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 var(--ui)}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+.top{display:flex;align-items:baseline;gap:18px;flex-wrap:wrap;padding:14px 24px;border-bottom:1px solid var(--line);background:var(--panel)}
+.top h1{margin:0;font:italic 600 26px/1 var(--serif);letter-spacing:.01em}
+.top p{margin:0;color:var(--muted);flex:1;min-width:220px}
+.top .acts{display:flex;gap:8px;flex-wrap:wrap}
+
+.layout{display:grid;grid-template-columns:292px minmax(0,1fr);gap:20px;padding:20px 24px;max-width:1280px;margin:0 auto}
+@media (max-width:900px){.layout{grid-template-columns:1fr;padding:14px}.top{padding:12px 14px}}
+
+aside.settings{position:sticky;top:12px;align-self:start;background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:14px 16px;max-height:calc(100vh - 24px);overflow:auto}
+@media (max-width:900px){aside.settings{position:static;max-height:none}}
+aside h2{font-size:15px;margin:16px 0 8px;font-weight:650}
+aside h2:first-child{margin-top:0}
+.fld{display:grid;grid-template-columns:1fr 92px;align-items:center;gap:8px;margin:6px 0}
+.fld.wide{grid-template-columns:1fr}
+.fld label{color:var(--muted);font-size:13.5px}
+.fld select.full{width:100%}
+.chk{display:flex;gap:8px;align-items:center;margin:7px 0;font-size:14px}
+.chk input{width:16px;height:16px;accent-color:var(--accent)}
+
+input[type=text],input[type=number],select{background:var(--field);border:1px solid var(--line);border-radius:4px;padding:6px 8px;min-width:0;width:100%}
+input.mono{font-family:var(--mono);font-size:14px}
+
+button{background:var(--field);border:1px solid var(--line);border-radius:4px;padding:6px 11px;cursor:pointer}
+button:hover{border-color:var(--muted)}
+button.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-weight:600}
+button.primary:hover{filter:brightness(1.07)}
+button.quiet{background:transparent}
+button.danger:hover{border-color:var(--danger);color:var(--danger)}
+
+details.help{margin-top:16px;border-top:1px solid var(--line);padding-top:10px}
+details.help summary{cursor:pointer;font-weight:650}
+details.help table{border-collapse:collapse;width:100%;margin:8px 0;font-size:13px}
+details.help td{padding:3px 0;vertical-align:top}
+details.help td:first-child{font-family:var(--mono);padding-right:8px;white-space:nowrap}
+details.help p{font-size:13px;color:var(--muted);margin:6px 0}
+
+main#plots{display:flex;flex-direction:column;gap:18px;min-width:0}
+article.plot{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:14px 16px}
+.row{display:flex;gap:8px;align-items:center}
+.row.eq .lab{width:96px;flex:none;text-align:right}
+.row.eq .expr{flex:1;font-size:15px}
+.eqs{color:var(--muted);font-family:var(--mono)}
+.seg{display:flex;flex:none}
+.seg button{border-radius:0;margin-left:-1px;padding:6px 10px}
+.seg button:first-child{border-radius:4px 0 0 4px;margin-left:0}
+.seg button:last-child{border-radius:0 4px 4px 0}
+.seg button[aria-pressed=true]{background:var(--accent-soft);border-color:var(--accent);color:var(--ink);position:relative;font-weight:600}
+@media (max-width:700px){.row.eq{flex-wrap:wrap}.row.eq .lab{text-align:left}}
+
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0 4px}
+.chips button{font-family:var(--mono);font-size:13px;padding:3px 8px;background:transparent}
+.err{min-height:20px;margin:4px 0 2px;font-size:14px;color:var(--danger)}
+.err:not(:empty){background:var(--danger-soft);padding:5px 9px;border-radius:4px}
+
+.opts{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:10px 22px;margin:8px 0 12px}
+.opts fieldset{border:0;padding:0;margin:0;min-width:0}
+.opts legend{font-size:13px;color:var(--muted);padding:0;margin-bottom:5px}
+.pair{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.pair.three{grid-template-columns:1fr 1fr}
+.stack{display:flex;flex-direction:column;gap:6px}
+.sr{position:absolute;left:-9999px}
+
+.sheet{border:1px solid var(--line);background:#fff;border-radius:4px;transition:opacity .15s}
+.sheet .paper{padding:10px;overflow:auto;text-align:center}
+.sheet svg{max-width:100%;height:auto;display:inline-block}
+.sheet.stale{opacity:.4}
+.sheet .cap{margin:0;padding:4px 10px;border-top:1px solid #E3E6E8;font-size:12.5px;color:#5c6a75;text-align:left}
+
+.exports{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;align-items:center}
+.exports .sp{flex:1}
+details.code{margin-top:10px}
+details.code summary{cursor:pointer;color:var(--muted);font-size:14px}
+details.code textarea{width:100%;height:220px;margin-top:8px;font:12.5px/1.4 var(--mono);background:var(--field);border:1px solid var(--line);border-radius:4px;padding:8px;resize:vertical}
+
+.addbar{display:flex;gap:10px;flex-wrap:wrap}
+.addbar select{width:auto;min-width:230px}
+
+#toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:8px 16px;border-radius:4px;font-size:14px;opacity:0;pointer-events:none;transition:opacity .2s}
+#toast.show{opacity:1}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <h1>Sigplot</h1>
+  <p>Type a signal, get a clean plot and the TikZ code for your exam.</p>
+  <div class="acts">
+    <button id="btnNew" class="quiet">New project</button>
+    <button id="btnOpen">Open project</button>
+    <button id="btnSave">Save project</button>
+    <input type="file" id="fileOpen" accept=".json,application/json" hidden>
+  </div>
+</header>
+
+<div class="layout">
+<aside class="settings" aria-label="Figure settings">
+  <h2>Figure size</h2>
+  <div class="fld"><label for="s-w">Plot width (cm)</label><input type="number" id="s-w" data-s="w" min="2" max="30" step="0.5"></div>
+  <div class="fld"><label for="s-h">Plot height (cm)</label><input type="number" id="s-h" data-s="h" min="1.5" max="30" step="0.5"></div>
+  <div class="fld wide"><label for="s-font">Text size (LaTeX)</label>
+    <select id="s-font" data-s="font" class="full">
+      <option value="scriptsize">scriptsize (7 pt)</option><option value="footnotesize">footnotesize (8 pt)</option>
+      <option value="small">small (9 pt)</option><option value="normalsize">normalsize (10 pt)</option><option value="large">large (12 pt)</option>
+    </select></div>
+  <div class="fld wide"><label for="s-lw">Signal line weight</label>
+    <select id="s-lw" data-s="lw" class="full"><option value="0.7">Thin</option><option value="1">Normal</option><option value="1.4">Bold</option><option value="2">Extra bold</option></select></div>
+
+  <h2>Grid</h2>
+  <div class="fld wide"><label for="s-grid">Gridlines</label>
+    <select id="s-grid" data-s="grid" class="full"><option value="off">Off</option><option value="major">Major lines</option><option value="fine">Major and minor lines</option></select></div>
+  <div class="fld"><label for="s-gx">Spacing in x</label><input type="text" id="s-gx" data-s="gridX" placeholder="auto" inputmode="decimal"></div>
+  <div class="fld"><label for="s-gy">Spacing in y</label><input type="text" id="s-gy" data-s="gridY" placeholder="auto" inputmode="decimal"></div>
+
+  <h2>Continuous-time details</h2>
+  <div class="fld wide"><label for="s-jump">Jump discontinuities</label>
+    <select id="s-jump" data-s="jump" class="full">
+      <option value="vline">Vertical line</option><option value="dashed">Dashed vertical line</option>
+      <option value="circ-right">Dots, value is right limit</option><option value="circ-left">Dots, value is left limit</option>
+      <option value="circ-mid">Dots, value is midpoint</option><option value="none">No marker</option>
+    </select></div>
+  <div class="fld wide"><label for="s-imp">Impulse labels</label>
+    <select id="s-imp" data-s="impLabel" class="full"><option value="plain">Weight, like 2</option><option value="paren">Weight in parentheses, like (2)</option><option value="none">No label</option></select></div>
+
+  <h2>Axes and labels</h2>
+  <label class="chk"><input type="checkbox" data-s="arrows">Arrowheads on axes</label>
+  <label class="chk"><input type="checkbox" data-s="showZero">Show tick and label at 0</label>
+  <label class="chk"><input type="checkbox" data-s="dtLabels">Label each discrete sample</label>
+
+  <details class="help">
+    <summary>Syntax guide</summary>
+    <table>
+      <tr><td>u(t) step(t)</td><td>unit step</td></tr>
+      <tr><td>r(t) ramp(t)</td><td>unit ramp</td></tr>
+      <tr><td>delta(t) δ(t)</td><td>impulse (δ[n] for discrete)</td></tr>
+      <tr><td>rect(t)</td><td>1 for |t| &lt; 1/2</td></tr>
+      <tr><td>tri(t)</td><td>triangle, width 2, peak 1</td></tr>
+      <tr><td>sinc(t)</td><td>sin(πt)/(πt)</td></tr>
+      <tr><td>sin cos tan exp</td><td>also abs sgn sqrt ln</td></tr>
+      <tr><td>e^{-2t}, 2^t</td><td>powers; e and pi are constants</td></tr>
+      <tr><td>2u(t-1)</td><td>implicit multiplication works</td></tr>
+      <tr><td>x(2t-1)</td><td>use another plot by its name</td></tr>
+      <tr><td>u[n], x[n-2]</td><td>square brackets for discrete</td></tr>
+    </table>
+    <p>LaTeX style input also works: \delta(t-1), \frac{1}{2}, e^{-t}, \sin(2\pi t).</p>
+    <p>Custom ticks: list values with commas, like <code>-1, 1, 2pi</code>. Use <code>value=label</code> for symbolic labels, like <code>2=T, 4=2T</code>.</p>
+    <p>Impulses and jumps are placed exactly, not sampled. Impulse arguments must be of the form at+b.</p>
+  </details>
+</aside>
+
+<main id="plots" aria-label="Plots"></main>
+</div>
+
+<div id="toast" role="status" aria-live="polite"></div>
+
+<script>
+/* =====================================================================
+   SIGPLOT  v0.1
+   Layout of this file (so it is easy to extend):
+     1. ENGINE  : parser, signal algebra (with exact impulses and jumps),
+                  scene builder, SVG and TikZ back ends.   No DOM use.
+     2. UI      : settings, plot cards, import/export.
+   To add a function (say a periodic pulse train): add an entry to KERNELS.
+   To add an export format: write a function that walks the scene returned
+   by buildScene(), like sceneToSvg() and sceneToTikz() do.
+   Ideas not built yet: convolution view, overlaying plots on shared axes,
+   colors, PDF export, symbolic parameters like T.
+   ===================================================================== */
+
+// ==== ENGINE START
+const VERSION='0.1';
+const CM_PX=96/2.54, PT_CM=2.54/72.27, PT_PX=PT_CM*CM_PX;
+const FONT_PT={scriptsize:7,footnotesize:8,small:9,normalsize:10,large:12};
+
+/* ---------- small helpers ---------- */
+function fnum(x,d=4){ if(!isFinite(x)) return '0'; let s=(+x.toFixed(d)).toString(); return s==='-0'?'0':s; }
+function clamp(v,a,b){ return Math.max(a,Math.min(b,v)); }
+function niceStep(span,target){
+  const raw=span/target, mag=Math.pow(10,Math.floor(Math.log10(raw))), m=raw/mag;
+  return (m<1.5?1:m<3.5?2:m<7.5?5:10)*mag;
+}
+function ticksFromStep(lo,hi,step){
+  const out=[]; if(!(step>0)) return out;
+  let k=Math.ceil(lo/step-1e-9);
+  for(let c=0;c<400;c++,k++){ const v=+(k*step).toFixed(10); if(v>hi+1e-9) break; out.push(v); }
+  return out;
+}
+function rdpIdx(pts,tol){
+  const n=pts.length; if(n<3) return pts.map((_,i)=>i);
+  const keep=new Uint8Array(n); keep[0]=keep[n-1]=1;
+  const stack=[[0,n-1]];
+  while(stack.length){
+    const [a,b]=stack.pop(); let maxD=0, idx=-1;
+    const ax=pts[a][0], ay=pts[a][1], dx=pts[b][0]-ax, dy=pts[b][1]-ay, len=Math.hypot(dx,dy);
+    for(let i=a+1;i<b;i++){
+      const px=pts[i][0], py=pts[i][1];
+      const d=len===0?Math.hypot(px-ax,py-ay):Math.abs(dy*(px-ax)-dx*(py-ay))/len;
+      if(d>maxD){maxD=d;idx=i;}
+    }
+    if(maxD>tol&&idx>0){ keep[idx]=1; stack.push([a,idx],[idx,b]); }
+  }
+  const out=[]; for(let i=0;i<n;i++) if(keep[i]) out.push(i); return out;
+}
+
+/* ---------- number to TeX ---------- */
+function fmtTex(x){
+  if(Math.abs(x)<1e-12) return '0';
+  const sign=x<0?'-':'', a=Math.abs(x);
+  const q=a/Math.PI;
+  for(const d of [1,2,3,4,6,8,12]){
+    const n=Math.round(q*d);
+    if(n>0&&n<=48&&Math.abs(q-n/d)<1e-9){
+      const top=n===1?'\\pi':n+'\\pi';
+      return sign+(d===1?top:'\\frac{'+top+'}{'+d+'}');
+    }
+  }
+  if(Math.abs(a-Math.round(a))<1e-9) return sign+Math.round(a);
+  for(const d of [2,3,4,6,8,12,16,32,64]){
+    const n=Math.round(a*d);
+    if(Math.abs(a-n/d)<1e-9) return sign+'\\frac{'+n+'}{'+d+'}';
+  }
+  return sign+(+a.toFixed(4));
+}
+
+/* ---------- parsing ---------- */
+const KERNELS={
+  u:{f:x=>x>=0?1:0, breaks:[0]},
+  r:{f:x=>x>0?x:0, breaks:[0]},
+  delta:{special:true},
+  rect:{f:x=>{const a=Math.abs(x);return a<0.5?1:(a===0.5?0.5:0);}, breaks:[-0.5,0.5]},
+  tri:{f:x=>Math.max(1-Math.abs(x),0), breaks:[-1,0,1]},
+  sinc:{f:x=>x===0?1:Math.sin(Math.PI*x)/(Math.PI*x)},
+  sin:{f:Math.sin}, cos:{f:Math.cos}, tan:{f:Math.tan}, exp:{f:Math.exp},
+  abs:{f:Math.abs, breaks:[0]}, sgn:{f:x=>Math.sign(x), breaks:[0]},
+  sqrt:{f:Math.sqrt}, ln:{f:Math.log}
+};
+const ALIAS={step:'u',ramp:'r',impulse:'delta',sign:'sgn',log:'ln'};
+const FUNC_NAMES=new Set([...Object.keys(KERNELS),...Object.keys(ALIAS)]);
+const RESERVED=new Set([...FUNC_NAMES,'t','n','e','pi','frac']);
+
+function normalize(src){
+  let s=String(src);
+  s=s.replace(/^\s*\\?[a-zA-Z]\w*\s*[\(\[]\s*[tn]\s*[\)\]]\s*=/,'');   // drop a leading "x(t) ="
+  s=s.replace(/\\left|\\right/g,'').replace(/\\[,;!: ]/g,' ');
+  s=s.replace(/\\cdot|\\times|·|×/g,'*').replace(/[−–]/g,'-').replace(/÷/g,'/');
+  s=s.replace(/δ/g,'delta').replace(/π/g,'pi');
+  s=s.replace(/\\([a-zA-Z]+)/g,'$1');
+  s=s.replace(/\{/g,'(').replace(/\}/g,')').replace(/\[/g,'(').replace(/\]/g,')');
+  return s.toLowerCase();
+}
+function splitKnown(w,known){
+  if(known.has(w)) return [w];
+  const memo={};
+  function go(i){
+    if(i===w.length) return [];
+    if(memo[i]!==undefined) return memo[i];
+    for(let l=w.length-i;l>=1;l--){
+      const sub=w.substr(i,l);
+      if(known.has(sub)){ const rest=go(i+l); if(rest) return memo[i]=[sub,...rest]; }
+    }
+    return memo[i]=null;
+  }
+  return go(0)||[w];
+}
+function tokenize(s,known){
+  const toks=[]; let i=0;
+  while(i<s.length){
+    const c=s[i];
+    if(/\s/.test(c)){i++;continue;}
+    if(/[0-9.]/.test(c)){
+      let j=i; while(j<s.length&&/[0-9.]/.test(s[j])) j++;
+      const txt=s.slice(i,j), v=parseFloat(txt);
+      if(isNaN(v)||txt.split('.').length>2) throw new Error('"'+txt+'" is not a valid number.');
+      toks.push({k:'num',v}); i=j; continue;
+    }
+    if(/[a-z]/.test(c)){
+      let j=i; while(j<s.length&&/[a-z]/.test(s[j])) j++;
+      for(const p of splitKnown(s.slice(i,j),known)) toks.push({k:'id',v:p});
+      i=j; continue;
+    }
+    if('+-*/^(),'.includes(c)){ toks.push({k:'op',v:c}); i++; continue; }
+    throw new Error('Unexpected character "'+c+'".');
+  }
+  return toks;
+}
+function parseTokens(toks,env){
+  let p=0;
+  const peek=()=>toks[p];
+  const isOp=v=>toks[p]&&toks[p].k==='op'&&toks[p].v===v;
+  const show=t=>t.k==='num'?String(t.v):t.v;
+  function expect(v){ if(!isOp(v)) throw new Error(toks[p]?'Expected "'+v+'" but found "'+show(toks[p])+'".':'Missing a closing "'+v+'".'); p++; }
+  function startsPrimary(t){ return t&&(t.k==='num'||t.k==='id'||(t.k==='op'&&t.v==='(')); }
+  function parseExpr(){
+    let left=parseTerm();
+    while(isOp('+')||isOp('-')){ const op=toks[p++].v; left={type:'bin',op,a:left,b:parseTerm()}; }
+    return left;
+  }
+  function parseTerm(){
+    let left=parseUnary();
+    for(;;){
+      if(isOp('*')||isOp('/')){ const op=toks[p++].v; left={type:'bin',op,a:left,b:parseUnary()}; }
+      else if(startsPrimary(peek())){ left={type:'bin',op:'*',a:left,b:parsePower()}; }
+      else break;
+    }
+    return left;
+  }
+  function parseUnary(){
+    if(isOp('-')){ p++; return {type:'neg',a:parseUnary()}; }
+    if(isOp('+')){ p++; return parseUnary(); }
+    return parsePower();
+  }
+  function parsePower(){
+    const base=parsePrimary();
+    if(isOp('^')){ p++; return {type:'bin',op:'^',a:base,b:parseUnary()}; }
+    return base;
+  }
+  function parsePrimary(){
+    const t=toks[p++];
+    if(!t) throw new Error('The expression ends too early. Something is missing after the last operator.');
+    if(t.k==='num') return {type:'num',v:t.v};
+    if(t.k==='op'&&t.v==='('){ const e=parseExpr(); expect(')'); return e; }
+    if(t.k==='id'){
+      const name=t.v;
+      if(name==='frac'){ expect('('); const a=parseExpr(); expect(')'); expect('('); const b=parseExpr(); expect(')'); return {type:'bin',op:'/',a,b}; }
+      if(env.varName&&name===env.varName) return {type:'var'};
+      if(name==='pi') return {type:'num',v:Math.PI};
+      if(name==='e') return {type:'num',v:Math.E};
+      if(env.funcs.has(name)||env.names.has(name)){
+        if(isOp('(')){ p++; const arg=parseExpr(); expect(')'); return {type:'call',name,arg}; }
+        const v=env.varName||'t';
+        throw new Error('"'+name+'" needs an argument, like '+name+'('+v+').');
+      }
+      if(env.varName==='n'&&name==='t') throw new Error('This is a discrete-time plot, so use n instead of t.');
+      if(env.varName==='t'&&name==='n') throw new Error('This is a continuous-time plot, so use t instead of n.');
+      throw new Error('Unknown symbol "'+name+'". Use '+(env.varName||'numbers only')+', pi, e, a function like u(t), or the name of another plot.');
+    }
+    throw new Error('Unexpected "'+t.v+'".');
+  }
+  const ast=parseExpr();
+  if(p<toks.length) throw new Error('Unexpected "'+show(toks[p])+'". Check your parentheses and operators.');
+  return ast;
+}
+
+/* ---------- generalized signals ----------
+   A signal is {f, imps, breaks}
+     f      regular part, function of t
+     imps   impulses [{t,w}]
+     breaks places where f changes character [{g,lin,roots}] meaning g(t)=root
+            (lin={a,b} when g(t)=a t+b so roots are exact)                      */
+const ID_BREAK=(roots)=>[{g:x=>x,lin:{a:1,b:0},roots}];
+function kernelSig(name,mode){
+  const k=KERNELS[name];
+  if(name==='delta'){
+    if(mode==='dt') return {f:x=>Math.abs(x)<1e-9?1:0,imps:[],breaks:ID_BREAK([0])};
+    return {f:()=>0,imps:[{t:0,w:1}],breaks:[]};
+  }
+  return {f:k.f,imps:[],breaks:k.breaks?ID_BREAK(k.breaks):[]};
+}
+function asLinear(sig){
+  if(sig.imps.length) return null;
+  const f0=sig.f(0), a=sig.f(1)-f0;
+  for(const p of [-2.7,3.1,0.37]){
+    const v=sig.f(p), e=a*p+f0;
+    if(!(Math.abs(v-e)<=1e-9*(1+Math.abs(e)))) return null;
+  }
+  return {a,b:f0};
+}
+function compose(sig,arg,mode){
+  if(arg.imps.length) throw new Error('An impulse cannot be the input of a function.');
+  const lin=asLinear(arg);
+  let imps=[];
+  if(sig.imps.length){
+    if(!lin||lin.a===0) throw new Error('An impulse needs an argument of the form a·t + b, like δ(2t-1).');
+    imps=sig.imps.map(i=>({t:(i.t-lin.b)/lin.a,w:mode==='ct'?i.w/Math.abs(lin.a):i.w}));
+  }
+  const breaks=sig.breaks.map(br=>({
+    g:t=>br.g(arg.f(t)),
+    lin:(br.lin&&lin)?{a:br.lin.a*lin.a,b:br.lin.a*lin.b+br.lin.b}:null,
+    roots:br.roots
+  })).concat(arg.breaks);
+  return {f:t=>sig.f(arg.f(t)),imps,breaks};
+}
+const midVal=(S,t0)=>0.5*(S.f(t0-1e-9)+S.f(t0+1e-9));
+function genSig(node,env){
+  switch(node.type){
+    case 'num': return {f:()=>node.v,imps:[],breaks:[]};
+    case 'var': return {f:t=>t,imps:[],breaks:[]};
+    case 'neg': { const A=genSig(node.a,env); return {f:t=>-A.f(t),imps:A.imps.map(i=>({t:i.t,w:-i.w})),breaks:A.breaks}; }
+    case 'call': {
+      const arg=genSig(node.arg,env), canon=ALIAS[node.name]||node.name;
+      const base=KERNELS[canon]?kernelSig(canon,env.mode):env.resolve(node.name);
+      return compose(base,arg,env.mode);
+    }
+    case 'bin': {
+      const A=genSig(node.a,env), B=genSig(node.b,env), br=A.breaks.concat(B.breaks);
+      switch(node.op){
+        case '+': return {f:t=>A.f(t)+B.f(t),imps:A.imps.concat(B.imps),breaks:br};
+        case '-': return {f:t=>A.f(t)-B.f(t),imps:A.imps.concat(B.imps.map(i=>({t:i.t,w:-i.w}))),breaks:br};
+        case '*': {
+          if(A.imps.length&&B.imps.length) throw new Error('Two impulses cannot be multiplied.');
+          const imps=A.imps.map(i=>({t:i.t,w:i.w*midVal(B,i.t)})).concat(B.imps.map(i=>({t:i.t,w:i.w*midVal(A,i.t)})));
+          return {f:t=>A.f(t)*B.f(t),imps,breaks:br};
+        }
+        case '/': {
+          if(B.imps.length) throw new Error('You cannot divide by an impulse.');
+          return {f:t=>A.f(t)/B.f(t),imps:A.imps.map(i=>({t:i.t,w:i.w/midVal(B,i.t)})),breaks:br};
+        }
+        case '^': {
+          if(A.imps.length||B.imps.length) throw new Error('Impulses cannot be raised to a power or used as exponents.');
+          return {f:t=>Math.pow(A.f(t),B.f(t)),imps:[],breaks:br};
+        }
+      }
+    }
+  }
+  throw new Error('Could not understand the expression.');
+}
+function evalExpression(expr,domain,ctx){
+  const s=normalize(expr);
+  if(!s.trim()) throw new Error('Type an expression, for example  u(t+1) - u(t-2)');
+  const varName=domain==='dt'?'n':'t';
+  const names=ctx?ctx.names:new Set();
+  const known=new Set([...FUNC_NAMES,'pi','e','frac',varName,...names]);
+  const ast=parseTokens(tokenize(s,known),{varName,funcs:FUNC_NAMES,names});
+  return genSig(ast,{mode:domain,resolve:nm=>ctx.resolve(nm,domain)});
+}
+function evalConstant(str){
+  const s=normalize(str);
+  if(!s.trim()) throw new Error('empty');
+  const known=new Set([...FUNC_NAMES,'pi','e','frac']);
+  const ast=parseTokens(tokenize(s,known),{varName:null,funcs:FUNC_NAMES,names:new Set()});
+  const v=genSig(ast,{mode:'ct',resolve:()=>{throw new Error('no names here');}}).f(0);
+  if(!isFinite(v)) throw new Error('not finite');
+  return v;
+}
+function nameOf(label){
+  const m=/^\s*\\?([A-Za-z][A-Za-z0-9]*)\s*[\(\[]/.exec(label||'');
+  if(!m) return null;
+  const nm=m[1].toLowerCase();
+  return RESERVED.has(nm)?null:nm;
+}
+
+/* ---------- breakpoints ---------- */
+function resolveBreaks(sig,x0,x1){
+  const out=[], span=x1-x0;
+  for(const br of sig.breaks){
+    if(br.lin){
+      if(br.lin.a===0) continue;
+      for(const r of br.roots){ const t=(r-br.lin.b)/br.lin.a; if(t>x0&&t<x1) out.push(t); }
+    } else {
+      const M=4000;
+      for(const r of br.roots){
+        let pt=x0, pv=br.g(x0)-r;
+        for(let k=1;k<=M;k++){
+          const t=x0+span*k/M, v=br.g(t)-r;
+          if(isFinite(pv)&&isFinite(v)){
+            if(v===0&&t<x1) out.push(t);
+            else if(pv*v<0){
+              let lo=pt, hi=t, slo=Math.sign(pv);
+              for(let it=0;it<50;it++){ const mid=(lo+hi)/2, vm=br.g(mid)-r; if(Math.sign(vm)===slo) lo=mid; else hi=mid; }
+              out.push((lo+hi)/2);
+            }
+          }
+          pt=t; pv=v;
+        }
+      }
+    }
+  }
+  out.sort((a,b)=>a-b);
+  return out.filter((v,i)=>i===0||v-out[i-1]>1e-9*span);
+}
+function fitRange(sig){
+  const pts=[];
+  for(const br of sig.breaks) if(br.lin&&br.lin.a!==0) for(const r of br.roots){ const t=(r-br.lin.b)/br.lin.a; if(Math.abs(t)<1e4) pts.push(t); }
+  for(const i of sig.imps) pts.push(i.t);
+  if(!pts.length) return [-5,5];
+  let lo=Math.floor(Math.min(0,...pts))-1, hi=Math.ceil(Math.max(0,...pts))+1;
+  const need=8-(hi-lo);
+  if(need>0){ lo-=Math.floor(need/2); hi+=Math.ceil(need/2); }
+  return [lo,hi];
+}
+
+/* ---------- ticks ---------- */
+function parseCustomTicks(str){
+  const out=[];
+  for(const raw of String(str||'').split(',')){
+    const item=raw.trim(); if(!item) continue;
+    const eq=item.indexOf('=');
+    const valStr=eq>=0?item.slice(0,eq):item;
+    let v;
+    try{ v=evalConstant(valStr); }catch(e){ throw new Error('Tick "'+valStr.trim()+'" is not a number. Try values like -1, 0.5, 2pi, or 2=T.'); }
+    out.push({v,tex:eq>=0?item.slice(eq+1).trim():fmtTex(v)});
+  }
+  return out;
+}
+function buildTicks(axis,lo,hi,mode,custom,key,dt){
+  const span=hi-lo;
+  const edge=(dt&&axis==='x')?0.3:0.04*span;
+  const autoList=step=>ticksFromStep(lo,hi,step).filter(v=>v>lo+edge&&v<hi-edge).map(v=>({v,tex:fmtTex(v)}));
+  if(mode==='none') return [];
+  if(mode==='auto'||mode==='marks'){
+    const step=(axis==='x'&&dt)?Math.max(1,Math.ceil(span/14)):niceStep(span,axis==='x'?8:3.5);
+    const l=autoList(step); if(mode==='marks') l.forEach(t=>t.tex=null); return l;
+  }
+  if(mode==='pi'){
+    const steps=[Math.PI/4,Math.PI/2,Math.PI,2*Math.PI,4*Math.PI,8*Math.PI];
+    return autoList(steps.find(s=>span/s<=10)||steps[steps.length-1]);
+  }
+  if(mode==='key'){
+    if(!key||!key.length) return buildTicks(axis,lo,hi,'auto',custom,null,dt);
+    return key.filter(v=>v>=lo-1e-9&&v<=hi+1e-9).map(v=>({v,tex:fmtTex(v)}));
+  }
+  if(mode==='custom') return parseCustomTicks(custom).filter(t=>t.v>=lo-1e-9&&t.v<=hi+1e-9);
+  return [];
+}
+function uniqSorted(vals,tol=1e-6){
+  const a=vals.filter(isFinite).sort((p,q)=>p-q);
+  return a.filter((v,i)=>i===0||v-a[i-1]>tol).map(v=>+v.toFixed(6));
+}
+
+/* ---------- scene builder ----------
+   A scene is back-end neutral: coordinates are data units, sizes are in pt.
+   primitives:  path {pts}  line {a,b,arrow}  circle {c,fill}  text {p,anchor,tex,sep} */
+function buildScene(sig,P,S){
+  const dt=P.domain==='dt';
+  const x0=dt?P.x0-0.5:P.x0, x1=dt?P.x1+0.5:P.x1, span=x1-x0;
+  const L={grid:[],content:[],marks:[],axes:[]};
+  const sigLw=P.lw>0?P.lw:S.lw, sigCol=P.color||'black';
+  const ys=[]; let segs=[], stems=[];
+
+  if(!dt){
+    const bps=resolveBreaks(sig,x0,x1), cuts=[x0,...bps,x1], eps=1e-9*span, N=1600;
+    for(let i=0;i<cuts.length-1;i++){
+      const a=cuts[i], b=cuts[i+1];
+      if(b-a<4*eps) continue;
+      const n=Math.max(6,Math.ceil((b-a)/span*N)), pts=[];
+      for(let k=0;k<n;k++){
+        const t=a+eps+(b-a-2*eps)*k/(n-1), y=sig.f(t);
+        pts.push([t,(isFinite(y)&&Math.abs(y)<1e6)?y:NaN]);
+        if(isFinite(y)&&Math.abs(y)<1e6) ys.push(y);
+      }
+      segs.push({a,b,pts});
+    }
+  } else {
+    const nLo=Math.ceil(P.x0-1e-9), nHi=Math.floor(P.x1+1e-9);
+    if(nHi-nLo>3000) throw new Error('That is too many samples. Narrow the x range.');
+    for(let k=nLo;k<=nHi;k++){ const y=sig.f(k); if(isFinite(y)&&Math.abs(y)<1e6){ stems.push([k,y]); ys.push(y); } }
+  }
+  const impMap=new Map();
+  if(!dt) for(const im of sig.imps){
+    if(im.t<x0-1e-9||im.t>x1+1e-9) continue;
+    const key=Math.round(im.t*1e9), e=impMap.get(key)||{t:im.t,w:0}; e.w+=im.w; impMap.set(key,e);
+  }
+  const imps=[...impMap.values()].filter(i=>Math.abs(i.w)>1e-12);
+
+  /* y range */
+  let y0=P.y0, y1=P.y1;
+  if(y0==null||y1==null){
+    let lo=0, hi=0;
+    for(const y of ys){ if(y<lo) lo=y; if(y>hi) hi=y; }
+    for(const i of imps){ if(i.w<lo) lo=i.w; if(i.w>hi) hi=i.w; }
+    if(hi-lo<1e-9){ lo=-1; hi=1; }
+    const sp=hi-lo;
+    if(y0==null) y0=lo-0.2*sp;
+    if(y1==null) y1=hi+0.25*sp;
+  }
+  if(!(y1>y0)) throw new Error('The y maximum must be larger than the y minimum.');
+  const H=y1-y0, xs=S.w/span, ysc=S.h/H;
+  const tlx=2.2*PT_CM/xs, tly=2.2*PT_CM/ysc;      // half tick length in data units
+  const xa=clamp(0,x0,x1), ya=clamp(0,y0,y1);
+  const clampY=y=>Math.max(y0-4*H,Math.min(y1+4*H,y));
+
+  /* curve paths and jumps */
+  const jumps=[], keyX=[], keyY=[];
+  if(!dt){
+    const tolJ=1e-4*H, paths=[]; let cur=[];
+    const flush=()=>{ if(cur.length>1) paths.push(cur); cur=[]; };
+    for(let i=0;i<segs.length;i++){
+      const sg=segs[i];
+      for(const pt of sg.pts){ if(Number.isNaN(pt[1])) flush(); else cur.push([pt[0],clampY(pt[1])]); }
+      const nx=segs[i+1];
+      if(nx&&Math.abs(nx.a-sg.b)<1e-9*span){
+        const yl=sg.pts[sg.pts.length-1][1], yr=nx.pts[0][1];
+        if(isFinite(yl)&&isFinite(yr)){
+          if(Math.abs(yl-yr)>tolJ){ jumps.push({t:sg.b,L:clampY(yl),R:clampY(yr)}); flush(); }
+        } else flush();
+      } else flush();
+    }
+    flush();
+    for(const p of paths){
+      const cm=p.map(q=>[(q[0]-x0)*xs,(q[1]-y0)*ysc]);
+      L.content.push({t:'path',pts:rdpIdx(cm,0.002).map(i=>p[i]),lw:sigLw,color:sigCol});
+    }
+    for(const j of jumps){
+      const open=(y)=>({t:'circle',c:[j.t,y],r:1.7,fill:false,lw:sigLw*0.8,color:sigCol});
+      const solid=(y)=>({t:'circle',c:[j.t,y],r:1.7,fill:true,lw:sigLw*0.8,color:sigCol});
+      switch(S.jump){
+        case 'vline': L.content.push({t:'line',a:[j.t,j.L],b:[j.t,j.R],lw:sigLw,color:sigCol}); break;
+        case 'dashed': L.content.push({t:'line',a:[j.t,j.L],b:[j.t,j.R],lw:sigLw*0.8,color:sigCol,dash:true}); break;
+        case 'circ-right': L.content.push(open(j.L),solid(j.R)); break;
+        case 'circ-left': L.content.push(solid(j.L),open(j.R)); break;
+        case 'circ-mid': L.content.push(open(j.L),open(j.R),solid((j.L+j.R)/2)); break;
+      }
+      keyY.push(j.L,j.R);
+    }
+    for(const i of imps){
+      L.marks.push({t:'line',a:[i.t,ya],b:[i.t,i.w],lw:sigLw,color:sigCol,arrow:'imp'});
+      if(S.impLabel!=='none'){
+        const tx=fmtTex(i.w);
+        L.marks.push({t:'text',p:[i.t,i.w],anchor:i.w>0?'south':'north',tex:S.impLabel==='paren'?'('+tx+')':tx,sep:2});
+      }
+      keyY.push(i.w);
+    }
+    keyX.push(...resolveBreaks(sig,x0,x1),...imps.map(i=>i.t));
+    if(ys.length){ keyY.push(Math.max(...ys),Math.min(...ys)); }
+  } else {
+    for(const [k,y] of stems){
+      if(Math.abs(y)<1e-9) continue;
+      const yy=clampY(y);
+      L.content.push({t:'line',a:[k,ya],b:[k,yy],lw:sigLw,color:sigCol});
+      L.content.push({t:'circle',c:[k,yy],r:2.2,fill:true,lw:sigLw,color:sigCol});
+      if(S.dtLabels) L.marks.push({t:'text',p:[k,yy],anchor:y>0?'south':'north',tex:fmtTex(y),sep:2.5});
+      keyY.push(y);
+    }
+  }
+
+  /* grid */
+  if(S.grid!=='off'){
+    const gx=S.gridX>0?S.gridX:(dt?Math.max(1,Math.ceil(span/12)):niceStep(span,8));
+    const gy=S.gridY>0?S.gridY:niceStep(H,3.5);
+    const div=st=>{ const m=st/Math.pow(10,Math.floor(Math.log10(st))); return Math.abs(m-2)<1e-6?4:5; };
+    const isMajor=(v,st)=>Math.abs(v/st-Math.round(v/st))<1e-6;
+    if(S.grid==='fine'){
+      if(!dt) for(const v of ticksFromStep(x0,x1,gx/div(gx))) if(!isMajor(v,gx)) L.grid.push({t:'line',a:[v,y0],b:[v,y1],lw:0.25,color:'minor'});
+      for(const v of ticksFromStep(y0,y1,gy/div(gy))) if(!isMajor(v,gy)) L.grid.push({t:'line',a:[x0,v],b:[x1,v],lw:0.25,color:'minor'});
+    }
+    for(const v of ticksFromStep(x0,x1,gx)) L.grid.push({t:'line',a:[v,y0],b:[v,y1],lw:0.35,color:'grid'});
+    for(const v of ticksFromStep(y0,y1,gy)) L.grid.push({t:'line',a:[x0,v],b:[x1,v],lw:0.35,color:'grid'});
+  }
+
+  /* axes, ticks, labels */
+  const ar=S.arrows?'ax':undefined;
+  L.axes.push({t:'line',a:[x0,ya],b:[x1,ya],lw:0.6,arrow:ar});
+  L.axes.push({t:'line',a:[xa,y0],b:[xa,y1],lw:0.6,arrow:ar});
+  const xt=buildTicks('x',x0,x1,P.xt,P.xtc,uniqSorted(keyX),dt);
+  const yt=buildTicks('y',y0,y1,P.yt,P.ytc,uniqSorted(keyY).filter(v=>Math.abs(v)>1e-9),dt);
+  for(const t of xt){
+    if(!S.showZero&&Math.abs(t.v)<1e-9) continue;
+    L.axes.push({t:'line',a:[t.v,ya-tly],b:[t.v,ya+tly],lw:0.6});
+    if(t.tex) L.axes.push({t:'text',p:[t.v,ya-tly],anchor:'north',tex:t.tex,sep:1.5});
+  }
+  for(const t of yt){
+    if(!S.showZero&&Math.abs(t.v)<1e-9) continue;
+    L.axes.push({t:'line',a:[xa-tlx,t.v],b:[xa+tlx,t.v],lw:0.6});
+    if(t.tex) L.axes.push({t:'text',p:[xa-tlx,t.v],anchor:'east',tex:t.tex,sep:1.5});
+  }
+  if(P.xlabel) L.axes.push({t:'text',p:[x1,ya],anchor:'west',tex:P.xlabel,sep:3.5});
+  if(P.ylabel) L.axes.push({t:'text',p:[xa,y1],anchor:'south',tex:P.ylabel,sep:3.5});
+
+  return {
+    size:{w:S.w,h:S.h}, view:{x0,x1,y0,y1}, fontName:S.font, fontPt:FONT_PT[S.font],
+    margin:{l:1.15,r:0.95,t:0.85,b:0.9},
+    layers:[{name:'grid',prims:L.grid},{name:'content',clip:true,prims:L.content},{name:'marks',prims:L.marks},{name:'axes',prims:L.axes}]
+  };
+}
+
+/* ---------- TeX to SVG text (approximate preview of math labels) ---------- */
+const GREEK={alpha:'α',beta:'β',gamma:'γ',delta:'δ',epsilon:'ε',theta:'θ',lambda:'λ',mu:'μ',pi:'π',rho:'ρ',sigma:'σ',tau:'τ',phi:'φ',omega:'ω',
+  Omega:'Ω',Delta:'Δ',Sigma:'Σ',Pi:'Π',Phi:'Φ',Gamma:'Γ',Lambda:'Λ',Theta:'Θ',infty:'∞',cdot:'·',times:'×',pm:'±'};
+const OPNAMES=new Set(['sin','cos','tan','exp','ln','log','max','min','sinc','rect','tri','sgn']);
+function xmlEsc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function texToSvg(tex,fs){
+  let i=0; const n=tex.length;
+  const shift=(dy,size,inner)=>'<tspan dy="'+fnum(dy,2)+'" font-size="'+fnum(size,2)+'">'+inner+'</tspan><tspan dy="'+fnum(-dy,2)+'" font-size="'+fnum(fs,2)+'">&#8203;</tspan>';
+  function atom(){
+    if(i>=n) return '';
+    if(tex[i]==='{'){ i++; const s=seq(); if(tex[i]==='}') i++; return s; }
+    return single();
+  }
+  function seq(){ let out=''; while(i<n&&tex[i]!=='}') out+=item(); return out; }
+  function item(){
+    const c=tex[i];
+    if(c==='{'){ i++; const s=seq(); if(tex[i]==='}') i++; return s; }
+    if(c==='^'||c==='_'){ i++; const a=atom(); return c==='^'?shift(-0.42*fs,0.7*fs,a):shift(0.25*fs,0.7*fs,a); }
+    return single();
+  }
+  function single(){
+    const c=tex[i];
+    if(c==='\\'){
+      let j=i+1, name=''; while(j<n&&/[a-zA-Z]/.test(tex[j])) name+=tex[j++];
+      if(!name){ i=j+1; return ''; }
+      i=j;
+      if(name==='frac'){ const a=atom(), b=atom(); return shift(-0.35*fs,0.7*fs,a)+'/'+shift(0.2*fs,0.7*fs,b); }
+      if(name==='left'||name==='right'||name==='mathrm') return '';
+      if(GREEK[name]) return '<tspan font-style="'+(/^[a-z]/.test(name)?'italic':'normal')+'">'+GREEK[name]+'</tspan>';
+      return xmlEsc(name);
+    }
+    if(/[a-zA-Z]/.test(c)){
+      let j=i; while(j<n&&/[a-zA-Z]/.test(tex[j])) j++;
+      const w=tex.slice(i,j);
+      if(OPNAMES.has(w)){ i=j; return xmlEsc(w); }
+      i++; return '<tspan font-style="italic">'+c+'</tspan>';
+    }
+    i++;
+    if(c==='-') return '\u2212';
+    if(c===' ') return '';
+    return xmlEsc(c);
+  }
+  let out='';
+  while(i<n){ out+=seq(); if(i<n&&tex[i]==='}') i++; }
+  return out;
+}
+
+/* ---------- SVG back end ---------- */
+const SVG_COLORS={black:'#000',grid:'#b9b9b9',minor:'#e0e0e0',blue:'#0b3fd1',red:'#c62828',green:'#2e7d32',orange:'#e65100',purple:'#6a1b9a',gray:'#8c8c8c'};
+const TIKZ_COLORS={black:'black',grid:'black!28',minor:'black!12',blue:'blue!80!black',red:'red!80!black',green:'green!50!black',orange:'orange!85!black',purple:'violet!90!black',gray:'black!55'};
+const SVG_FONT="'Latin Modern Roman','CMU Serif','STIX Two Text','Times New Roman',Times,serif";
+function sceneToSvg(sc,uid){
+  const m=sc.margin, W=sc.size.w*CM_PX, Ht=sc.size.h*CM_PX, v=sc.view;
+  const tw=(m.l+sc.size.w+m.r)*CM_PX, th=(m.t+sc.size.h+m.b)*CM_PX, fs=sc.fontPt*PT_PX;
+  const X=x=>m.l*CM_PX+(x-v.x0)/(v.x1-v.x0)*W, Y=y=>m.t*CM_PX+(v.y1-y)/(v.y1-v.y0)*Ht;
+  const f2=x=>fnum(x,2), id=String(uid).replace(/[^a-z0-9]/gi,'');
+  const out=[];
+  out.push('<svg xmlns="http://www.w3.org/2000/svg" width="'+f2(tw)+'" height="'+f2(th)+'" viewBox="0 0 '+f2(tw)+' '+f2(th)+'" role="img" aria-label="Plot preview">');
+  const cols=new Set(['black']);
+  for(const l of sc.layers) for(const q of l.prims) if(q.t==='line'&&q.arrow) cols.add(q.color||'black');
+  let mk='';
+  for(const c of cols){
+    mk+='<marker id="axh'+id+c+'" viewBox="0 0 8 6" refX="8" refY="3" markerWidth="8" markerHeight="6" markerUnits="userSpaceOnUse" orient="auto"><path d="M0,0L8,3L0,6z" fill="'+SVG_COLORS[c]+'"/></marker>'
+      +'<marker id="imh'+id+c+'" viewBox="0 0 9 7" refX="9" refY="3.5" markerWidth="9" markerHeight="7" markerUnits="userSpaceOnUse" orient="auto"><path d="M0,0L9,3.5L0,7z" fill="'+SVG_COLORS[c]+'"/></marker>';
+  }
+  out.push('<defs><clipPath id="clip'+id+'"><rect x="'+f2(m.l*CM_PX)+'" y="'+f2(m.t*CM_PX)+'" width="'+f2(W)+'" height="'+f2(Ht)+'"/></clipPath>'+mk+'</defs>');
+  out.push('<rect width="100%" height="100%" fill="#fff"/>');
+  out.push('<g font-family="'+SVG_FONT+'" font-size="'+f2(fs)+'" fill="#000" stroke-linecap="round" stroke-linejoin="round">');
+  for(const layer of sc.layers){
+    if(!layer.prims.length) continue;
+    out.push(layer.clip?'<g clip-path="url(#clip'+id+')">':'<g>');
+    for(const p of layer.prims){
+      const col=SVG_COLORS[p.color||'black'], sw=f2((p.lw||1)*PT_PX);
+      if(p.t==='path'){
+        out.push('<polyline fill="none" stroke="'+col+'" stroke-width="'+sw+'" points="'+p.pts.map(q=>f2(X(q[0]))+','+f2(Y(q[1]))).join(' ')+'"/>');
+      } else if(p.t==='line'){
+        let x1=X(p.a[0]), y1=Y(p.a[1]), x2=X(p.b[0]), y2=Y(p.b[1]);
+        let extra='';
+        if(p.arrow){
+          const len=p.arrow==='imp'?7:6.4, d=Math.hypot(x2-x1,y2-y1);
+          extra=' marker-end="url(#'+(p.arrow==='imp'?'imh':'axh')+id+(p.color||'black')+')"';
+          if(d>len){ x2-=(x2-x1)/d*len; y2-=(y2-y1)/d*len; }
+        }
+        if(p.dash) extra+=' stroke-dasharray="'+f2(3*PT_PX)+','+f2(2*PT_PX)+'"';
+        out.push('<line x1="'+f2(x1)+'" y1="'+f2(y1)+'" x2="'+f2(x2)+'" y2="'+f2(y2)+'" stroke="'+col+'" stroke-width="'+sw+'"'+extra+'/>');
+      } else if(p.t==='circle'){
+        out.push('<circle cx="'+f2(X(p.c[0]))+'" cy="'+f2(Y(p.c[1]))+'" r="'+f2(p.r*PT_PX)+'" fill="'+(p.fill?col:'#fff')+'" stroke="'+col+'" stroke-width="'+sw+'"/>');
+      } else if(p.t==='text'){
+        const sep=(p.sep==null?1.5:p.sep)*PT_PX, a=p.anchor||'center';
+        let x=X(p.p[0]), y=Y(p.p[1]), ta='middle', base;
+        if(a.includes('west')){ ta='start'; x+=sep; } else if(a.includes('east')){ ta='end'; x-=sep; }
+        if(a.includes('north')) base=y+sep+0.72*fs; else if(a.includes('south')) base=y-sep-0.22*fs; else base=y+0.34*fs;
+        out.push('<text x="'+f2(x)+'" y="'+f2(base)+'" text-anchor="'+ta+'">'+texToSvg(p.tex,fs)+'</text>');
+      }
+    }
+    out.push('</g>');
+  }
+  out.push('</g></svg>');
+  return {svg:out.join('\n'),width:tw,height:th};
+}
+
+/* ---------- TikZ back end ---------- */
+function sceneToTikz(sc,opts){
+  opts=opts||{};
+  const v=sc.view, xs=sc.size.w/(v.x1-v.x0), ys=sc.size.h/(v.y1-v.y0);
+  const P=q=>'('+fnum(q[0])+','+fnum(q[1])+')';
+  const lines=[];
+  const style=(p,extra)=>{
+    let s='line width='+fnum(p.lw||1,2)+'pt';
+    if(p.dash) s+=', dash pattern=on 3pt off 2pt';
+    if(p.color&&p.color!=='black') s+=', '+TIKZ_COLORS[p.color];
+    return s+(extra?', '+extra:'');
+  };
+  const ind=opts.standalone?'  ':'  ';
+  lines.push('% Generated by Sigplot '+VERSION+'. Needs \\usepackage{tikz} and \\usetikzlibrary{arrows.meta}.');
+  lines.push('\\begin{tikzpicture}[x='+fnum(xs,5)+'cm, y='+fnum(ys,5)+'cm, font=\\'+sc.fontName+', line cap=round, line join=round]');
+  for(const layer of sc.layers){
+    if(!layer.prims.length) continue;
+    let pad=ind;
+    if(layer.clip){ lines.push(ind+'\\begin{scope}'); lines.push(ind+'  \\clip '+P([v.x0,v.y0])+' rectangle '+P([v.x1,v.y1])+';'); pad=ind+'  '; }
+    let group=null;
+    const flush=()=>{ if(group){ lines.push(pad+'\\draw['+group.style+'] '+group.segs.join(' ')+';'); group=null; } };
+    for(const p of layer.prims){
+      if(p.t==='line'&&!p.arrow){
+        const st=style(p);
+        if(!group||group.style!==st){ flush(); group={style:st,segs:[]}; }
+        group.segs.push(P(p.a)+' -- '+P(p.b)); continue;
+      }
+      flush();
+      if(p.t==='path'){
+        const pts=p.pts.map(P), rows=[];
+        for(let i=0;i<pts.length;i+=6) rows.push(pts.slice(i,i+6).join(' '));
+        lines.push(pad+'\\draw['+style(p)+'] plot coordinates {');
+        rows.forEach(r=>lines.push(pad+'  '+r));
+        lines.push(pad+'};');
+      } else if(p.t==='line'){
+        const tip=p.arrow==='imp'?'-{Latex[length=2mm,width=1.6mm]}':'-{Latex[length=1.8mm,width=1.4mm]}';
+        lines.push(pad+'\\draw['+style(p,tip)+'] '+P(p.a)+' -- '+P(p.b)+';');
+      } else if(p.t==='circle'){
+        lines.push(p.fill?pad+'\\fill'+(p.color&&p.color!=='black'?'['+TIKZ_COLORS[p.color]+']':'')+' '+P(p.c)+' circle ('+p.r+'pt);'
+                         :pad+'\\draw['+style(p,'fill=white')+'] '+P(p.c)+' circle ('+p.r+'pt);');
+      } else if(p.t==='text'){
+        lines.push(pad+'\\node[anchor='+(p.anchor||'center')+', inner sep='+(p.sep==null?1.5:p.sep)+'pt] at '+P(p.p)+' {$'+p.tex+'$};');
+      }
+    }
+    flush();
+    if(layer.clip) lines.push(ind+'\\end{scope}');
+  }
+  lines.push('\\end{tikzpicture}');
+  const body=lines.join('\n');
+  if(!opts.standalone) return body;
+  return '\\documentclass[tikz,border=6pt]{standalone}\n\\usetikzlibrary{arrows.meta}\n\\begin{document}\n'+body+'\n\\end{document}\n';
+}
+if(typeof module!=='undefined') module.exports={evalExpression,evalConstant,buildScene,sceneToSvg,sceneToTikz,fmtTex,resolveBreaks,fitRange,nameOf,normalize};
+// ==== ENGINE END
+
+/* =====================================================================
+   UI
+   ===================================================================== */
+const STORE_KEY='sigplot.project.v1';
+const DEFAULT_SETTINGS={w:9,h:4,font:'small',lw:1,grid:'off',gridX:'',gridY:'',jump:'vline',impLabel:'plain',arrows:true,showZero:false,dtLabels:false};
+let state={settings:{...DEFAULT_SETTINGS},plots:[]};
+let nextId=1;
+const cache={};      // id -> {scene, svgInfo}
+
+function newPlot(o){
+  const dt=o&&o.domain==='dt';
+  return Object.assign({id:'p'+(nextId++),label:dt?'x[n]':'x(t)',expr:'',domain:'ct',
+    x0:'-5',x1:'5',y0:'',y1:'',xt:'auto',xtc:'',yt:'auto',ytc:'',color:'black',lw:''},o||{});
+}
+const EXAMPLES=[
+  ['Rectangular pulse',{label:'x(t)',expr:'u(t+1) - u(t-2)'}],
+  ['Triangle built from ramps',{label:'x(t)',expr:'r(t+1) - 2r(t) + r(t-1)',xt:'custom',xtc:'-1, 1'}],
+  ['Decaying exponential',{label:'x(t)',expr:'e^{-t}u(t)'}],
+  ['Impulses',{label:'x(t)',expr:'2\\delta(t+1) - \\delta(t-2)'}],
+  ['Damped sinusoid',{label:'x(t)',expr:'e^{-t/2}\\sin(2\\pi t)u(t)',x0:'-1',x1:'6'}],
+  ['Square wave',{label:'x(t)',expr:'u(\\sin(\\pi t))',x0:'-3',x1:'3'}],
+  ['Sine with π-labeled axis',{label:'x(t)',expr:'\\sin(t)',x0:'-7',x1:'7',xt:'pi'}],
+  ['Discrete impulses',{domain:'dt',label:'x[n]',expr:'\\delta[n+1] + 2\\delta[n-2] - \\delta[n-3]',x0:'-3',x1:'6'}],
+  ['Discrete pulse',{domain:'dt',label:'x[n]',expr:'u[n] - u[n-4]',x0:'-3',x1:'8'}],
+  ['Decaying discrete exponential',{domain:'dt',label:'h[n]',expr:'(1/2)^n u[n]',x0:'-3',x1:'8'}],
+  ['Discrete cosine',{domain:'dt',label:'x[n]',expr:'\\cos(\\pi n/4)',x0:'-9',x1:'9'}]
+];
+const CHIPS={
+  ct:[['u(t)','u(t)'],['r(t)','r(t)'],['δ(t)','delta(t)'],['rect','rect(t)'],['tri','tri(t)'],['sinc','sinc(t)'],['sin','sin(2*pi*t)'],['cos','cos(2*pi*t)'],['e^-t','e^{-t}']],
+  dt:[['u[n]','u[n]'],['r[n]','r[n]'],['δ[n]','delta[n]'],['cos','cos(pi*n/4)'],['sin','sin(pi*n/4)'],['(1/2)^n','(1/2)^n'],['rect','rect[n/4]']]
+};
+
+const $=(s,r)=>(r||document).querySelector(s);
+const $$=(s,r)=>[...(r||document).querySelectorAll(s)];
+const esc=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+const getPlot=id=>state.plots.find(p=>p.id===id);
+function toast(msg){ const t=$('#toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(toast._h); toast._h=setTimeout(()=>t.classList.remove('show'),1800); }
+function debounce(fn,ms){ let h; return (...a)=>{ clearTimeout(h); h=setTimeout(()=>fn(...a),ms); }; }
+
+/* ----- compile ----- */
+function makeCtx(){
+  const byName={};
+  for(const p of state.plots){ const nm=nameOf(p.label); if(nm&&!byName[nm]) byName[nm]=p; }
+  const sigs=new Map(), stack=[];
+  const ctx={
+    names:new Set(Object.keys(byName)),
+    sigFor(p){
+      if(sigs.has(p.id)) return sigs.get(p.id);
+      if(stack.includes(p.id)) throw new Error('"'+p.label+'" refers to itself, directly or through another plot.');
+      stack.push(p.id);
+      try{ const s=evalExpression(p.expr,p.domain,ctx); sigs.set(p.id,s); return s; } finally{ stack.pop(); }
+    },
+    resolve(name,domain){
+      const q=byName[name];
+      if(!q) throw new Error('There is no plot named "'+name+'". Name a plot by its label, like x(t).');
+      if(q.domain!==domain) throw new Error('"'+q.label+'" is a '+(q.domain==='dt'?'discrete':'continuous')+'-time plot and cannot be used here.');
+      return ctx.sigFor(q);
+    }
+  };
+  return ctx;
+}
+function readSettings(){
+  const s=state.settings;
+  return {w:clamp(+s.w||9,2,30),h:clamp(+s.h||4,1.5,30),font:FONT_PT[s.font]?s.font:'small',lw:+s.lw||1,grid:s.grid,
+    gridX:parseFloat(s.gridX)||0,gridY:parseFloat(s.gridY)||0,jump:s.jump,impLabel:s.impLabel,arrows:!!s.arrows,showZero:!!s.showZero,dtLabels:!!s.dtLabels};
+}
+function numField(str,name){
+  const v=parseFloat(str);
+  if(!isFinite(v)) throw new Error('Enter a number for '+name+'.');
+  return v;
+}
+function compilePlot(p){
+  const sig=makeCtx().sigFor(p);
+  const P={domain:p.domain,x0:numField(p.x0,'x min'),x1:numField(p.x1,'x max'),
+    y0:String(p.y0).trim()===''?null:numField(p.y0,'y min'),y1:String(p.y1).trim()===''?null:numField(p.y1,'y max'),
+    xlabel:p.domain==='dt'?'n':'t',ylabel:p.label.trim(),xt:p.xt,xtc:p.xtc,yt:p.yt,ytc:p.ytc,color:COLOR_OPTS.some(c=>c[0]===p.color)?p.color:'black',lw:null};
+  if(String(p.lw).trim()!==''){ const w=parseFloat(p.lw); if(!(w>0&&w<=8)) throw new Error('Line width must be a number between 0 and 8 points.'); P.lw=w; }
+  if(!(P.x1>P.x0)) throw new Error('The x maximum must be larger than the x minimum.');
+  const scene=buildScene(sig,P,readSettings());
+  return {scene,sig,svgInfo:sceneToSvg(scene,p.id)};
+}
+
+/* ----- cards ----- */
+function selectHtml(field,opts,val){
+  return '<select data-f="'+field+'">'+opts.map(o=>'<option value="'+o[0]+'"'+(o[0]===val?' selected':'')+'>'+o[1]+'</option>').join('')+'</select>';
+}
+const COLOR_OPTS=[['black','Black'],['blue','Blue'],['red','Red'],['green','Green'],['orange','Orange'],['purple','Purple'],['gray','Gray']];
+const TICK_OPTS=[['auto','Automatic'],['pi','Multiples of π'],['key','At key points'],['custom','Custom list'],['marks','Marks only, no labels'],['none','None']];
+function cardHtml(p){
+  const v=p.domain==='dt'?'n':'t';
+  return '<article class="plot" data-id="'+p.id+'">'
+  +'<div class="row eq"><label class="sr">Signal name</label>'
+  +'<input type="text" class="lab mono" data-f="label" spellcheck="false" aria-label="Signal name" placeholder="x(t)">'
+  +'<span class="eqs" aria-hidden="true">=</span>'
+  +'<input type="text" class="expr mono" data-f="expr" spellcheck="false" autocomplete="off" aria-label="Signal expression" placeholder="'+(v==='t'?'2u(t+1) - 2u(t-1) + delta(t-2)':'u[n] - u[n-4]')+'">'
+  +'<div class="seg" role="group" aria-label="Signal type"><button type="button" data-domain="ct" aria-pressed="'+(p.domain==='ct')+'">Continuous</button><button type="button" data-domain="dt" aria-pressed="'+(p.domain==='dt')+'">Discrete</button></div></div>'
+  +'<div class="chips" aria-label="Insert a building block">'+CHIPS[p.domain].map((c,i)=>'<button type="button" data-chip="'+i+'">'+esc(c[0])+'</button>').join('')+'</div>'
+  +'<div class="err" role="alert"></div>'
+  +'<div class="opts">'
+  +'<fieldset><legend>Horizontal range ('+v+')</legend><div class="pair"><input type="text" data-f="x0" inputmode="decimal" aria-label="x min"><input type="text" data-f="x1" inputmode="decimal" aria-label="x max"></div>'
+  +'<div style="margin-top:6px"><button type="button" data-act="fit">Fit to signal</button></div></fieldset>'
+  +'<fieldset><legend>Vertical range (blank for automatic)</legend><div class="pair"><input type="text" data-f="y0" placeholder="auto" inputmode="decimal" aria-label="y min"><input type="text" data-f="y1" placeholder="auto" inputmode="decimal" aria-label="y max"></div></fieldset>'
+  +'<fieldset><legend>Ticks on horizontal axis</legend><div class="stack">'+selectHtml('xt',TICK_OPTS,p.xt)+'<input type="text" class="mono" data-f="xtc" data-custom="x" placeholder="-1, 1, 2pi, 2=T" aria-label="Custom x ticks"></div></fieldset>'
+  +'<fieldset><legend>Ticks on vertical axis</legend><div class="stack">'+selectHtml('yt',TICK_OPTS,p.yt)+'<input type="text" class="mono" data-f="ytc" data-custom="y" placeholder="1, 2, 1/2" aria-label="Custom y ticks"></div></fieldset>'
+  +'<fieldset><legend>Signal line</legend><div class="pair">'+selectHtml('color',COLOR_OPTS,p.color)+'<input type="text" data-f="lw" inputmode="decimal" placeholder="width (pt)" aria-label="Line width in points, blank for the default"></div></fieldset>'
+  +'</div>'
+  +'<div class="sheet"><div class="paper"></div><p class="cap"></p></div>'
+  +'<div class="exports"><button type="button" class="primary" data-act="tikz">Copy TikZ</button>'
+  +'<button type="button" data-act="tex">Download .tex</button><button type="button" data-act="svg">SVG</button><button type="button" data-act="png">PNG</button>'
+  +'<span class="sp"></span><button type="button" class="quiet" data-act="dup">Duplicate</button><button type="button" class="quiet danger" data-act="del">Delete</button></div>'
+  +'<details class="code"><summary>Show TikZ code</summary><textarea readonly spellcheck="false" aria-label="TikZ code"></textarea></details>'
+  +'</article>';
+}
+function renderAll(){
+  const host=$('#plots'); host.innerHTML='';
+  for(const p of state.plots){
+    const wrap=document.createElement('div'); wrap.innerHTML=cardHtml(p);
+    const el=wrap.firstElementChild; host.appendChild(el);
+    $$('[data-f]',el).forEach(inp=>{ if(inp.tagName!=='SELECT') inp.value=p[inp.dataset.f]; });
+    bindCard(el,p.id); syncCustomVisibility(el,p); updateCard(p.id);
+  }
+  const bar=document.createElement('div'); bar.className='addbar';
+  bar.innerHTML='<button type="button" class="primary" id="addCT">Add continuous plot</button><button type="button" id="addDT">Add discrete plot</button>'
+    +'<select id="addEx" aria-label="Add an example plot"><option value="">Add an example…</option>'+EXAMPLES.map((e,i)=>'<option value="'+i+'">'+esc(e[0])+'</option>').join('')+'</select>';
+  host.appendChild(bar);
+  $('#addCT').onclick=()=>addPlot({});
+  $('#addDT').onclick=()=>addPlot({domain:'dt',x0:'-3',x1:'8'});
+  $('#addEx').onchange=e=>{ if(e.target.value!=='') addPlot(EXAMPLES[+e.target.value][1]); };
+}
+function addPlot(o){
+  const p=newPlot(o); state.plots.push(p); persist(); renderAll();
+  const el=$('[data-id="'+p.id+'"]'); if(el){ el.scrollIntoView({behavior:'smooth',block:'center'}); const inp=$('.expr',el); if(!p.expr) inp.focus(); }
+}
+function syncCustomVisibility(el,p){
+  $$('[data-custom]',el).forEach(i=>{ i.style.display=(p[i.dataset.custom+'t']==='custom')?'':'none'; });
+}
+function bindCard(el,id){
+  const refresh=debounce(()=>{ persist(); updateAllDeps(id); },120);
+  $$('[data-f]',el).forEach(inp=>{
+    const ev=inp.tagName==='SELECT'?'change':'input';
+    inp.addEventListener(ev,()=>{ const p=getPlot(id); p[inp.dataset.f]=inp.value; if(inp.tagName==='SELECT') syncCustomVisibility(el,p); refresh(); });
+  });
+  $$('[data-domain]',el).forEach(b=>b.onclick=()=>{
+    const p=getPlot(id); if(p.domain===b.dataset.domain) return;
+    p.domain=b.dataset.domain;
+    if(p.domain==='dt'){ if(/\(t\)\s*$/.test(p.label)) p.label=p.label.replace(/\(t\)\s*$/,'[n]'); p.x0='-3'; p.x1='8'; }
+    else { if(/\[n\]\s*$/.test(p.label)) p.label=p.label.replace(/\[n\]\s*$/,'(t)'); p.x0='-5'; p.x1='5'; }
+    p.expr=''; persist(); renderAll();
+  });
+  $$('[data-chip]',el).forEach(b=>b.onclick=()=>{
+    const p=getPlot(id), inp=$('.expr',el), snip=CHIPS[p.domain][+b.dataset.chip][1];
+    const s=inp.selectionStart??inp.value.length, e=inp.selectionEnd??s;
+    const before=inp.value.slice(0,s), after=inp.value.slice(e);
+    const glue=(before.trim()&&!/[+\-*\/(^\s]$/.test(before))?' + ':'';
+    inp.value=before+glue+snip+after; p.expr=inp.value;
+    const pos=(before+glue+snip).length; inp.focus(); inp.setSelectionRange(pos,pos);
+    refresh();
+  });
+  $$('[data-act]',el).forEach(b=>b.onclick=()=>doAction(b.dataset.act,id));
+  $('details.code',el).addEventListener('toggle',()=>fillCode(id));
+}
+function fillCode(id){
+  const el=$('[data-id="'+id+'"]'); if(!el) return;
+  const det=$('details.code',el), c=cache[id];
+  if(det.open&&c) $('textarea',el).value=sceneToTikz(c.scene);
+}
+function updateAllDeps(id){
+  // a plot may be referenced by others (e.g. y(t) = x(t-1)), so refresh everything
+  state.plots.forEach(p=>updateCard(p.id));
+}
+function updateCard(id){
+  const p=getPlot(id), el=$('[data-id="'+id+'"]'); if(!p||!el) return;
+  const err=$('.err',el), sheet=$('.sheet',el);
+  try{
+    const res=compilePlot(p);
+    cache[id]=res; $('.paper',el).innerHTML=res.svgInfo.svg;
+    const sv=$('.paper svg',el); if(sv) sv.style.width=Math.round(res.svgInfo.width*1.7)+'px';
+    const S=readSettings();
+    $('.cap',el).textContent='Plot area '+fnum(S.w,1)+' × '+fnum(S.h,1)+' cm. Math labels are approximate here and exact in LaTeX.';
+    err.textContent=''; sheet.classList.remove('stale'); fillCode(id);
+  }catch(e){
+    err.textContent=e.message||String(e); sheet.classList.add('stale');
+  }
+}
+
+/* ----- actions ----- */
+function slug(s){ return (String(s).replace(/[^A-Za-z0-9]+/g,'_').replace(/^_+|_+$/g,'')||'plot'); }
+function download(name,blob){
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=name;
+  document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(a.href),2000);
+}
+async function copyText(txt){
+  try{ await navigator.clipboard.writeText(txt); return true; }
+  catch(e){
+    const ta=document.createElement('textarea'); ta.value=txt; ta.style.position='fixed'; ta.style.opacity='0';
+    document.body.appendChild(ta); ta.select(); let ok=false; try{ ok=document.execCommand('copy'); }catch(_){} ta.remove(); return ok;
+  }
+}
+function doAction(act,id){
+  const p=getPlot(id), c=cache[id], el=$('[data-id="'+id+'"]');
+  if(act==='dup'){ const q=Object.assign({},p,{id:'p'+(nextId++),label:p.label}); state.plots.splice(state.plots.indexOf(p)+1,0,q); persist(); renderAll(); return; }
+  if(act==='del'){ if(state.plots.length&&confirm('Delete the plot "'+p.label+'"?')){ state.plots=state.plots.filter(q=>q.id!==id); persist(); renderAll(); } return; }
+  if(act==='fit'){
+    try{ const r=fitRange(makeCtx().sigFor(p)); p.x0=String(r[0]); p.x1=String(r[1]);
+      $('[data-f=x0]',el).value=p.x0; $('[data-f=x1]',el).value=p.x1; persist(); updateAllDeps(id); }
+    catch(e){ $('.err',el).textContent=e.message; }
+    return;
+  }
+  if(!c){ toast('Fix the error above first.'); return; }
+  const base=slug(p.label);
+  if(act==='tikz') copyText(sceneToTikz(c.scene)).then(ok=>toast(ok?'TikZ code copied':'Copy failed. Use "Show TikZ code" instead.'));
+  else if(act==='tex') download(base+'.tex',new Blob([sceneToTikz(c.scene,{standalone:true})],{type:'text/plain'}));
+  else if(act==='svg') download(base+'.svg',new Blob([c.svgInfo.svg],{type:'image/svg+xml'}));
+  else if(act==='png'){
+    const sc=4, img=new Image();
+    img.onload=()=>{
+      const cv=document.createElement('canvas'); cv.width=Math.round(c.svgInfo.width*sc); cv.height=Math.round(c.svgInfo.height*sc);
+      const g=cv.getContext('2d'); g.fillStyle='#fff'; g.fillRect(0,0,cv.width,cv.height); g.drawImage(img,0,0,cv.width,cv.height);
+      cv.toBlob(b=>b?download(base+'.png',b):toast('PNG export failed'),'image/png');
+    };
+    img.onerror=()=>toast('PNG export failed');
+    img.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(c.svgInfo.svg);
+  }
+}
+
+/* ----- settings, persistence, project files ----- */
+function bindSettings(){
+  $$('[data-s]').forEach(inp=>{
+    const k=inp.dataset.s;
+    if(inp.type==='checkbox') inp.checked=!!state.settings[k]; else inp.value=state.settings[k];
+    const h=debounce(()=>{ persist(); state.plots.forEach(p=>updateCard(p.id)); },120);
+    inp.addEventListener(inp.tagName==='SELECT'||inp.type==='checkbox'?'change':'input',()=>{
+      state.settings[k]=inp.type==='checkbox'?inp.checked:inp.value; h();
+    });
+  });
+}
+function persist(){ try{ localStorage.setItem(STORE_KEY,JSON.stringify(state)); }catch(e){} }
+function loadProject(obj){
+  const plots=Array.isArray(obj.plots)?obj.plots:[];
+  state={settings:Object.assign({},DEFAULT_SETTINGS,obj.settings||{}),plots:plots.map(p=>newPlot(p))};
+  if(!state.plots.length) state.plots=[newPlot({expr:''})];
+  $$('[data-s]').forEach(inp=>{ const k=inp.dataset.s; if(inp.type==='checkbox') inp.checked=!!state.settings[k]; else inp.value=state.settings[k]; });
+  persist(); renderAll();
+}
+function starter(){
+  return {settings:{...DEFAULT_SETTINGS},plots:[
+    {label:'x(t)',expr:'2u(t+1) - 2u(t-1) + \\delta(t-2)',x0:'-3',x1:'4'},
+    {domain:'dt',label:'h[n]',expr:'(1/2)^n u[n]',x0:'-3',x1:'8'}
+  ]};
+}
+$('#btnSave').onclick=()=>download('sigplot-project.json',new Blob([JSON.stringify({app:'sigplot',version:VERSION,settings:state.settings,plots:state.plots.map(({id,...r})=>r)},null,2)],{type:'application/json'}));
+$('#btnOpen').onclick=()=>$('#fileOpen').click();
+$('#fileOpen').onchange=e=>{
+  const f=e.target.files[0]; if(!f) return;
+  const rd=new FileReader();
+  rd.onload=()=>{ try{ loadProject(JSON.parse(rd.result)); toast('Project opened'); }catch(err){ toast('That file is not a Sigplot project.'); } };
+  rd.readAsText(f); e.target.value='';
+};
+$('#btnNew').onclick=()=>{ if(confirm('Start a new project? Unsaved changes will be lost.')) loadProject({settings:DEFAULT_SETTINGS,plots:[{label:'x(t)',expr:''}]}); };
+
+(function init(){
+  let saved=null;
+  try{ saved=JSON.parse(localStorage.getItem(STORE_KEY)||'null'); }catch(e){}
+  bindSettings();
+  loadProject(saved&&saved.plots&&saved.plots.length?saved:starter());
+})();
+</script>
+</body>
+</html>
